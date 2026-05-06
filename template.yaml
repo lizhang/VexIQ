@@ -10,6 +10,97 @@ Globals:
 
 Resources:
 
+  VexKnowledgeBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: vex-knowledge
+
+  VexVectorBucket:
+    Type: AWS::S3Vectors::VectorBucket
+    Properties:
+      VectorBucketName: vex-knowledge-vectors
+
+  VexVectorIndex:
+    Type: AWS::S3Vectors::Index
+    Properties:
+      VectorBucketArn: !GetAtt VexVectorBucket.VectorBucketArn
+      IndexName: vex-knowledge-index
+      DataType: float32
+      Dimension: 1024
+      DistanceMetric: cosine
+
+  BedrockKBRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: bedrock-kb-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: bedrock.amazonaws.com
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+      Policies:
+        - PolicyName: BedrockKBPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - bedrock:InvokeModel
+                  - bedrock:ListFoundationModels
+                  - bedrock:ListCustomModels
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:ListBucket
+                Resource:
+                  - !GetAtt VexKnowledgeBucket.Arn
+                  - !Sub "${VexKnowledgeBucket.Arn}/*"
+              - Effect: Allow
+                Action:
+                  - s3vectors:PutVectors
+                  - s3vectors:GetVectors
+                  - s3vectors:DeleteVectors
+                  - s3vectors:QueryVectors
+                  - s3vectors:GetIndex
+                Resource: !GetAtt VexVectorIndex.IndexArn
+
+  VexKnowledgeBase:
+    Type: AWS::Bedrock::KnowledgeBase
+    Properties:
+      Name: vex-knowledge-base
+      RoleArn: !GetAtt BedrockKBRole.Arn
+      KnowledgeBaseConfiguration:
+        Type: VECTOR
+        VectorKnowledgeBaseConfiguration:
+          EmbeddingModelArn: !Sub "arn:aws:bedrock:${AWS::Region}::foundation-model/amazon.titan-embed-text-v2:0"
+      StorageConfiguration:
+        Type: S3_VECTORS
+        S3VectorsConfiguration:
+          VectorBucketArn: !GetAtt VexVectorBucket.VectorBucketArn
+          IndexName: vex-knowledge-index
+
+  VexKnowledgeDataSource:
+    Type: AWS::Bedrock::DataSource
+    Properties:
+      KnowledgeBaseId: !Ref VexKnowledgeBase
+      Name: vex-knowledge-s3
+      DataSourceConfiguration:
+        Type: S3
+        S3Configuration:
+          BucketArn: !GetAtt VexKnowledgeBucket.Arn
+      VectorIngestionConfiguration:
+        ChunkingConfiguration:
+          ChunkingStrategy: FIXED_SIZE
+          FixedSizeChunkingConfiguration:
+            MaxTokens: 300
+            OverlapPercentage: 20
+
   VexSearchHttpApi:
     Type: AWS::Serverless::HttpApi
     Properties:
@@ -31,6 +122,7 @@ Resources:
         Variables:
           TABLE_NAME: search-history
           MODEL_ID: amazon.nova-lite-v1:0
+          KNOWLEDGE_BASE_ID: !Ref VexKnowledgeBase
 
       Policies:
         - AWSLambdaBasicExecutionRole
@@ -50,6 +142,12 @@ Resources:
                 - bedrock:Converse
                 - bedrock:InvokeModel
               Resource: "*"
+
+        - Statement:
+            - Effect: Allow
+              Action:
+                - bedrock-agent:Retrieve
+              Resource: !GetAtt VexKnowledgeBase.KnowledgeBaseArn
 
       Events:
         SearchApi:
@@ -71,3 +169,7 @@ Outputs:
   SearchFunctionName:
     Description: Lambda function name
     Value: !Ref SearchFunction
+
+  KnowledgeBaseId:
+    Description: Bedrock Knowledge Base ID
+    Value: !Ref VexKnowledgeBase

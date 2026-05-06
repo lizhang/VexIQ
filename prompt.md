@@ -39,7 +39,7 @@ OUTPUT SCHEMA (SPARSE)
       "name": string,
       "sku": string
     },
-    "season": number,
+    "season_id": number,
     "time": {
       "start": string,
       "end": string
@@ -71,6 +71,8 @@ RULES
   - If N > 25 → set selectTop = 25
 - if user says "best" "top" without number -> selectTop = 1 
 - If user does not specify a number → selectTop = 25
+
+- If the user mentions only a year (e.g., "2025", "in 2026"), prefer to resolve it as a `season_id` using the season lookup rules, rather than as a time range.
 
 - Interpret relative dates using today's date provided above:
   - "today" → set time.start and time.end to today's date

@@ -10,6 +10,7 @@ import config
 from schema import SearchQuery
 
 bedrock = boto3.client("bedrock-runtime", region_name=config.AWS_REGION)
+bedrock_agent = boto3.client("bedrock-agent-runtime", region_name=config.AWS_REGION)
 dynamodb = boto3.resource("dynamodb", region_name=config.AWS_REGION)
 table = dynamodb.Table(config.TABLE_NAME)
 
@@ -31,6 +32,23 @@ def normalize(raw: str) -> str:
         return json.dumps({"error": {"message": "bedrock output json validation error", "error" : str(e), "raw" : raw } })
 
 
+def retrieve_context(query: str) -> str:
+    try:
+        response = bedrock_agent.retrieve(
+            knowledgeBaseId=config.KNOWLEDGE_BASE_ID,
+            retrievalQuery={"text": query},
+            retrievalConfiguration={"vectorSearchConfiguration": {"numberOfResults": 5}},
+        )
+        chunks = [
+            r["content"]["text"]
+            for r in response.get("retrievalResults", [])
+            if r.get("content", {}).get("text")
+        ]
+        return "\n\n---\n\n".join(chunks) if chunks else ""
+    except Exception:
+        return ""
+
+
 def lambda_handler(event, context):
     body = json.loads(event.get("body") or "{}")
     user_input = body.get("text")
@@ -38,7 +56,14 @@ def lambda_handler(event, context):
         return {"statusCode": 400, "body": json.dumps({"error": "text parameter is required"})}
 
     today = datetime.utcnow().strftime("%Y-%m-%d")
-    system_prompt = f"Today's date is {today}.\n\n{_SYSTEM_PROMPT}"
+    context = retrieve_context(f"{today} {user_input}")
+    if context:
+        system_prompt = (
+            f"Today's date is {today}.\n\n{_SYSTEM_PROMPT}\n\n"
+            f"========================\nRETRIEVED CONTEXT\n========================\n{context}"
+        )
+    else:
+        system_prompt = f"Today's date is {today}.\n\n{_SYSTEM_PROMPT}"
 
     start = time.time()
     try:
