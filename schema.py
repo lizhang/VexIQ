@@ -26,7 +26,7 @@ class Filter(BaseModel):
     location: Optional[Location] = None
     program: Optional[Program] = None
     event: Optional[Event] = None
-    season: Optional[int] = None
+    season_id: Optional[int] = None
     time: Optional[Time] = None
     team: Optional[Team] = None
 

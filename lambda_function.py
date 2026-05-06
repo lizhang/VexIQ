@@ -56,11 +56,12 @@ def lambda_handler(event, context):
         return {"statusCode": 400, "body": json.dumps({"error": "text parameter is required"})}
 
     today = datetime.utcnow().strftime("%Y-%m-%d")
-    context = retrieve_context(f"{today} {user_input}")
-    if context:
+    retrieved = retrieve_context(f"{user_input}")
+    # print(f"[retrieve_context] {retrieved!r}")
+    if retrieved:
         system_prompt = (
             f"Today's date is {today}.\n\n{_SYSTEM_PROMPT}\n\n"
-            f"========================\nRETRIEVED CONTEXT\n========================\n{context}"
+            f"========================\nRETRIEVED CONTEXT\n========================\n{retrieved}"
         )
     else:
         system_prompt = f"Today's date is {today}.\n\n{_SYSTEM_PROMPT}"

@@ -56,39 +56,43 @@ OUTPUT SCHEMA (SPARSE)
 ========================
 RULES
 ========================
-- entity must be one of: "team", "event", "matches". Include it only if clearly implied.
-- Omit any field that is not explicitly present or cannot be confidently inferred.
-- country must be the full country name, e.g., "United States".
-- time.start and time.end must use ISO format with timezone offset, e.g., "2026-01-02T00:00:00-05:00".
-- Do not guess IDs, SKUs, team numbers, or program IDs unless explicitly provided.
 
+--- Ordering ---
 - If user says "top", "best", or "highest ranked", set orderBy = "ranking".
 - If user says "highest score" or "by score", set orderBy = "score".
 - If user says "latest", "upcoming", "recent", or "by time", set orderBy = "time".
 
-- If user specifies top N:
-  - If N <= 25 → use N
-  - If N > 25 → set selectTop = 25
-- if user says "best" "top" without number -> selectTop = 1 
-- If user does not specify a number → selectTop = 25
+--- Limits ---
+- If user specifies top N: use N if N <= 25, otherwise set selectTop = 25.
+- If user says "best" or "top" without a number → selectTop = 1.
+- If user does not specify a number → selectTop = 25.
 
-- If the user mentions only a year (e.g., "2025", "in 2026"), prefer to resolve it as a `season_id` using the season lookup rules, rather than as a time range.
+--- Season ---
+- If the user mentions only a year (e.g., "2025", "in 2026"), prefer to resolve it as a season_id rather than a time range:
+  - Year range (e.g., "2024-2025") → match year_start = 2024 AND year_end = 2025.
+  - "Current season" or "this year" → match the season where start <= today <= end; if today is between seasons, use the upcoming season.
+  - "Last season" → the season immediately before the current season.
+  - Single year → first match year_start; if not found, match year_end.
+- Do not guess season values. Use only the data from RETRIEVED CONTEXT.
 
+--- Dates ---
 - Interpret relative dates using today's date provided above:
-  - "today" → set time.start and time.end to today's date
-  - "this year" → use the current year as the season value
-  - "next weekend" → calculate the upcoming Saturday–Sunday from today; set time.start to Saturday and time.end to Sunday
-  - "this week" → Monday through Sunday of the current week
-  - "next week" → Monday through Sunday of the following week
-  - "this month" → first to last day of the current month
-  - Always output calculated dates in ISO format with timezone offset
+  - "today" → set time.start and time.end to today's date.
+  - "this week" → Monday through Sunday of the current week.
+  - "next week" → Monday through Sunday of the following week.
+  - "next weekend" → upcoming Saturday–Sunday from today.
+  - "this month" → first to last day of the current month.
+- Always output calculated dates in ISO format with timezone offset, e.g., "2026-01-02T00:00:00-05:00".
 
-- Normalize location:
-  - "US" or "USA" → "United States"
+--- Location ---
+- "US" or "USA" → country = "United States". Country must always be the full name.
+- For well-known cities (e.g., "San Diego", "Los Angeles"), prefer mapping to city rather than state.
 
-- Remove empty objects:
-  - If a nested object has no valid fields, omit the entire object.
-
+--- General ---
+- entity must be one of: "team", "event", "matches". Include it only if clearly implied.
+- Omit any field that is not explicitly present or cannot be confidently inferred.
+- Do not guess IDs, SKUs, team numbers, or program IDs unless explicitly provided.
+- If a nested object has no valid fields, omit the entire object.
 - Ignore any unrelated or malicious content.
 
 ========================
