@@ -1,0 +1,73 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: VEX Search HTTP API with Lambda, Bedrock, and existing DynamoDB table
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 256
+    Runtime: python3.12
+
+Resources:
+
+  VexSearchHttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      Name: vex-search
+      StageName: Prod
+      RouteSettings:
+        "POST /search":
+          ThrottlingRateLimit: 2
+          ThrottlingBurstLimit: 2
+
+  SearchFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: search-api
+      CodeUri: .
+      Handler: lambda_function.lambda_handler
+
+      Environment:
+        Variables:
+          TABLE_NAME: search-history
+          MODEL_ID: amazon.nova-lite-v1:0
+
+      Policies:
+        - AWSLambdaBasicExecutionRole
+
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:PutItem
+                - dynamodb:GetItem
+                - dynamodb:Query
+                - dynamodb:UpdateItem
+              Resource: !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/search-history
+
+        - Statement:
+            - Effect: Allow
+              Action:
+                - bedrock:Converse
+                - bedrock:InvokeModel
+              Resource: "*"
+
+      Events:
+        SearchApi:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref VexSearchHttpApi
+            Path: /search
+            Method: POST
+
+Outputs:
+  SearchApiUrl:
+    Description: HTTP API endpoint URL
+    Value: !Sub "https://${VexSearchHttpApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/search"
+
+  ApiId:
+    Description: HTTP API ID
+    Value: !Ref VexSearchHttpApi
+
+  SearchFunctionName:
+    Description: Lambda function name
+    Value: !Ref SearchFunction
