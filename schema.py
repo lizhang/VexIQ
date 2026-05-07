@@ -6,10 +6,6 @@ class Location(BaseModel):
     zipCode: Optional[str] = None
     country: Optional[str] = None
 
-class Program(BaseModel):
-    id: Optional[int] = None
-    name: Optional[str] = None
-
 class Event(BaseModel):
     name: Optional[str] = None
     sku: Optional[str] = None
@@ -24,7 +20,7 @@ class Team(BaseModel):
 
 class Filter(BaseModel):
     location: Optional[Location] = None
-    program: Optional[Program] = None
+    program_id: Optional[int] = None
     event: Optional[Event] = None
     season_id: Optional[int] = None
     time: Optional[Time] = None

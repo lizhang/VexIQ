@@ -1,4 +1,5 @@
 import json
+import re
 import time
 from datetime import datetime
 from decimal import Decimal
@@ -19,6 +20,11 @@ with open("prompt.md", "r") as f:
 
 _SYSTEM_PROMPT = _raw.split("========================\nUSER INPUT\n========================")[0].strip()
 
+_PROGRAM_ABBRS = re.compile(
+    r"\b(V5RC|VURC|WORKSHOP|VIQRC|FAC|VAIRC|VEX_AIR_Drone_Competition)\b",
+    re.IGNORECASE,
+)
+
 
 def normalize(raw: str) -> str:
     if raw.startswith("```"):
@@ -33,16 +39,22 @@ def normalize(raw: str) -> str:
 
 
 def retrieve_context(query: str) -> str:
+    query = re.sub(r"\b(\d{4})\b", r"# VEX IQ Seasons \1", query)
+    if _PROGRAM_ABBRS.search(query):
+        query = "# VEX Program Organizations " + query
     try:
         response = bedrock_agent.retrieve(
             knowledgeBaseId=config.KNOWLEDGE_BASE_ID,
             retrievalQuery={"text": query},
-            retrievalConfiguration={"vectorSearchConfiguration": {"numberOfResults": 5}},
+            retrievalConfiguration={"vectorSearchConfiguration": {"numberOfResults": 3}},
         )
+        results = response.get("retrievalResults", [])
+        #for i, r in enumerate(results):
+        #    print(f"[retrieve_context #{i}] score={r.get('score')} text={r.get('content', {}).get('text')!r}")
         chunks = [
             r["content"]["text"]
-            for r in response.get("retrievalResults", [])
-            if r.get("content", {}).get("text")
+            for r in results
+            if r.get("content", {}).get("text") and r.get('score') > 0.65    
         ]
         return "\n\n---\n\n".join(chunks) if chunks else ""
     except Exception:
@@ -56,8 +68,8 @@ def lambda_handler(event, context):
         return {"statusCode": 400, "body": json.dumps({"error": "text parameter is required"})}
 
     today = datetime.utcnow().strftime("%Y-%m-%d")
-    retrieved = retrieve_context(f"{user_input}")
-    # print(f"[retrieve_context] {retrieved!r}")
+    retrieved = retrieve_context(user_input)
+   
     if retrieved:
         system_prompt = (
             f"Today's date is {today}.\n\n{_SYSTEM_PROMPT}\n\n"
@@ -80,12 +92,15 @@ def lambda_handler(event, context):
         end = time.time()
         duration = Decimal(str(round(end - start, 3)))
 
-    table.put_item(Item={
-        "eventid": context.aws_request_id,
-        "date_time": Decimal(str(round(end, 3))),
-        "duration": duration,
-        "input": user_input,
-        "output": output,
-    })
+    try:
+        table.put_item(Item={
+            "eventid": context.aws_request_id,
+            "date_time": Decimal(str(round(end, 3))),
+            "duration": duration,
+            "input": user_input,
+            "output": output,
+        })
+    except Exception as e:
+        print(f"[dynamodb] put_item failed: {e}")
 
     return {"statusCode": 200, "body": output}
