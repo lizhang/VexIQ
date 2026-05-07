@@ -1,3 +1,8 @@
+# knowledge_service.py
+# This file is used to retrieve knowledge from the knowledge base
+# using RAG just for demo purpose
+# in production, we will use a more efficient way to retrieve knowledge, like table lookup
+
 import re
 
 import config
