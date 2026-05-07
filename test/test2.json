@@ -1,0 +1,23 @@
+{
+    "event": {
+        "body": "{\"text\":\"find top 10 team in LA for workshop in 2025\"}",
+        "headers": {
+            "Content-Type": "application/json"
+        },
+        "httpMethod": "POST",
+        "path": "/search"
+    },
+    "result": {
+        "entity": "team",
+        "filter": {
+            "location": {
+                "city": "Los Angeles",
+                "country": "United States"
+            },
+            "program_id": 37,
+            "season_id": 196
+        },
+        "orderBy": "ranking",
+        "selectTop": 10
+    }
+}

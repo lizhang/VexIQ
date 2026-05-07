@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from lambda_function import lambda_handler
+from lambda_handler import lambda_handler
 
 class MockContext:
     def __init__(self):

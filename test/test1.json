@@ -1,0 +1,18 @@
+{
+  "event": {
+    "body": "{\"text\":\"find the best team in season 2026\"}",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "httpMethod": "POST",
+    "path": "/search"
+  },
+  "result": {
+    "entity": "team",
+    "filter": {
+      "season_id": 203
+    },
+    "orderBy": "ranking",
+    "selectTop": 1
+  }
+}

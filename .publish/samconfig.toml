@@ -1,5 +1,11 @@
 version = 0.1
 
+[default.global.parameters]
+region = "us-east-1"
+
+[default.build.parameters]
+template_file = ".publish/template.yaml"
+
 [default.deploy.parameters]
 stack_name = "vex-search-api"
 resolve_s3 = true
@@ -9,6 +15,4 @@ confirm_changeset = true
 capabilities = "CAPABILITY_IAM"
 disable_rollback = true
 image_repositories = []
-
-[default.global.parameters]
-region = "us-east-1"
+template_file = ".publish/template.yaml"
