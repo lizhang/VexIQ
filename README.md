@@ -76,3 +76,7 @@ Search Results
 ## Goal
 
 The goal of this project is to make VEX Robotics data easier to access through conversational AI and natural language search.
+
+## Notes
+
+RAG is used here for demo purposes only. For production use, more efficient retrieval methods exist for structured data like session and program information — for example, direct table lookups would be faster and more reliable than embedding-based retrieval in this case.
