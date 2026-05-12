@@ -1,33 +1,26 @@
-from pydantic import BaseModel, Field
-from typing import Optional
+from pydantic import BaseModel, Field, ConfigDict
+from typing import Optional, Literal, List, Union
 
-class Location(BaseModel):
-    city: Optional[str] = None
-    zipCode: Optional[str] = None
-    country: Optional[str] = None
 
-class Event(BaseModel):
-    name: Optional[str] = None
-    sku: Optional[str] = None
+class FilterCondition(BaseModel):
+    field: str
+    op: Literal["eq", "neq", "gt", "lt", "contains"]
+    value: Union[str, int, float]
 
-class Time(BaseModel):
-    start: Optional[str] = None
-    end: Optional[str] = None
 
-class Team(BaseModel):
-    name: Optional[str] = None
-    number: Optional[str] = None
+class FilterGroup(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+    and_: Optional[List[FilterCondition]] = Field(None, alias="and")
+    or_: Optional[List[FilterCondition]] = Field(None, alias="or")
 
-class Filter(BaseModel):
-    location: Optional[Location] = None
-    program_id: Optional[int] = None
-    event: Optional[Event] = None
-    season_id: Optional[int] = None
-    time: Optional[Time] = None
-    team: Optional[Team] = None
+
+class OrderBy(BaseModel):
+    field: str
+    direction: Literal["asc", "desc"]
+
 
 class SearchQuery(BaseModel):
     entity: Optional[str] = Field(None, pattern="^(team|event|matches)$")
-    filter: Optional[Filter] = None
-    orderBy: Optional[str] = Field(None, pattern="^(ranking|score|time)$")
+    filter: Optional[FilterGroup] = None
+    orderBy: Optional[OrderBy] = None
     selectTop: Optional[int] = None

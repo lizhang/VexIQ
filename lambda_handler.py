@@ -28,7 +28,7 @@ def normalize(raw: str) -> str:
         validated = SearchQuery.model_validate(json.loads(raw))
         if validated.selectTop is not None and validated.selectTop > 25:
             validated = validated.model_copy(update={"selectTop": 25})
-        return validated.model_dump_json(exclude_none=True)
+        return validated.model_dump_json(exclude_none=True, by_alias=True)
     except (ValidationError, json.JSONDecodeError) as e:
         return json.dumps({"error": {"message": "bedrock output json validation error", "error" : str(e), "raw" : raw } })
 
