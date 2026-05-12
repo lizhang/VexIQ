@@ -10,14 +10,33 @@
     "result": {
         "entity": "team",
         "filter": {
-            "location": {
-                "city": "Los Angeles",
-                "country": "United States"
+          "and": [
+            {
+              "field": "teams.city",
+              "op": "eq",
+              "value": "Los Angeles"
             },
-            "program_id": 37,
-            "season_id": 196
+            {
+              "field": "teams.country",
+              "op": "eq",
+              "value": "United States"
+            },
+            {
+              "field": "program_id",
+              "op": "eq",
+              "value": 37
+            },
+            {
+              "field": "season_id",
+              "op": "eq",
+              "value": 196
+            }
+          ]
         },
-        "orderBy": "ranking",
+        "orderBy": {
+          "field": "rankings.rank",
+          "direction": "asc"
+        },
         "selectTop": 10
-    }
+      }
 }

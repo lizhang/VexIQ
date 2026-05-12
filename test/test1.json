@@ -10,9 +10,18 @@
   "result": {
     "entity": "team",
     "filter": {
-      "season_id": 203
+      "and": [
+        {
+          "field": "season_id",
+          "op": "eq",
+          "value": 203
+        }
+      ]
     },
-    "orderBy": "ranking",
+    "orderBy": {
+      "field": "teams.best_skill_score",
+      "direction": "desc"
+    },
     "selectTop": 1
   }
 }
