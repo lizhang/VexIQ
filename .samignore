@@ -1,0 +1,8 @@
+.aws-sam
+.publish
+.git
+__pycache__
+deployed
+deployed.zip
+*.zip
+.env
