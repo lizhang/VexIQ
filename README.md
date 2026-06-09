@@ -77,6 +77,48 @@ Search Results
 
 The goal of this project is to make VEX Robotics data easier to access through conversational AI and natural language search.
 
+## Getting Started
+
+### Install
+
+```bash
+pip install -r requirements.txt
+```
+
+### Configure
+
+Copy `.env.example` to `.env` and fill in:
+
+```
+TABLE_NAME=search-history
+MODEL_ID=amazon.nova-lite-v1:0
+AWS_REGION=us-east-1
+KNOWLEDGE_BASE_ID=<bedrock-kb-id>
+KB_SCORE_THRESHOLD=0.65
+```
+
+AWS credentials must also be configured in your environment.
+
+### Run Locally
+
+```bash
+python run_local.py
+```
+
+Starts an interactive REPL — type natural language queries and see the structured `SearchQuery` JSON output.
+
+### Build
+
+```bash
+sam build --template-file .publish/template.yaml
+```
+
+### Deploy
+
+```bash
+sam deploy --template-file .publish/template.yaml --config-file .publish/samconfig.toml
+```
+
 ## Notes
 
 RAG is used here for demo purposes only.
