@@ -79,4 +79,4 @@ The goal of this project is to make VEX Robotics data easier to access through c
 
 ## Notes
 
-RAG is used here for demo purposes only. For production use, more efficient retrieval methods exist for structured data like session and program information.
+RAG is used here for demo purposes only.
