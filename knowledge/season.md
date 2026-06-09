@@ -1,7 +1,8 @@
 # VEX IQ Seasons
 
-## Season Table
+## examples: current season, latest season, 2025 season, 2025-2026 season, last year season, last year, current year, three years ago, next season, year 2025
 
+## Sesion table
 ```json
 [
   { "season_id": 203, "start": "2026-04-30", "end": "2027-12-25", "year_start": 2026, "year_end": 2027 },

@@ -129,6 +129,7 @@ Valid orderBy fields and when to use them:
 
 --- Program ---
 - Resolve program names/abbreviations to program_id using RETRIEVED CONTEXT. Matching is case-insensitive.
+- The program_id value is found in the [metadata] section of the retrieved context under the key "program_id".
 - If no match found, use the user's original input as-is.
 - Do not guess program_id values, and don't add program_id filter if no program is mentioned
 
