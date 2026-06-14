@@ -27,7 +27,7 @@ OUTPUT SCHEMA
   "entity": "team" | "event" | "matches",
   "filter": {
     "and" | "or": [
-      {"field": "<field>", "op": "eq" | "neq" | "gt" | "lt" | "contains", "value": <string|number>}
+      {"field": "<field>", "op": "eq" | "neq" | "gt" | "lt" | "contains" | "in", "value": <string|number|array>}
     ]
   },
   "orderBy": {"field": "<field>", "direction": "asc" | "desc"},
@@ -40,12 +40,15 @@ RULES
 
 --- entity ---
 - Must be one of: "team", "event", "matches". Include only if clearly implied.
+- Never invent or output any other entity value.
 
 --- filter ---
 - Use "and" when all conditions must match (default).
 - Use "or" when the query implies alternatives (e.g., "in city A or city B").
 - No nesting: the array under "and"/"or" contains only flat condition objects.
 - Each condition: {"field": "<field>", "op": "<op>", "value": <value>}
+- Use ONLY a field name from the "Valid filter fields" list below. Never invent, guess, or
+  derive a field name. If the field you need is not in the list, omit that condition.
 - Omit the filter entirely if no conditions can be confidently inferred.
 
 Valid filter fields and their required operations:
@@ -74,10 +77,12 @@ Valid filter fields and their required operations:
   Team:
     teams.name         contains
     teams.number       eq
+    teams.grade        eq      one of: "Elementary School", "Middle School", "High School", "College"
 
   Program / Season:
     program_id         eq      number
-    season_id          eq      number
+    season_id          eq      number   (single season — when the program is known)
+    season_id          in      array of numbers, e.g. [196, 197]   (multiple seasons — when no program is known; see --- Season ---)
 
 - "US" or "USA" → "United States"
 - "LA" → city = "Los Angeles" unless the user clearly means the state Louisiana.
@@ -87,6 +92,8 @@ Valid filter fields and their required operations:
 - Always an object: {"field": "<field>", "direction": "asc" | "desc"}
 - Only one orderBy per query.
 - direction "desc" = highest/best first; "asc" = lowest/earliest first.
+- Use ONLY a field name from the "Valid orderBy fields" list below. Never invent or guess a
+  field name. If none of the listed fields apply, omit orderBy entirely.
 
 Valid orderBy fields and when to use them:
 
@@ -119,19 +126,41 @@ Valid orderBy fields and when to use them:
 - If user says "best" or "top" without a number → selectTop = 1
 - If user does not specify a limit → selectTop = 25
 
---- Season ---
-- If the user mentions only a year (e.g., "2025", "in 2026"), prefer season_id over a time range:
-  - Year range (e.g., "2024-2025") → match year_start = 2024 AND year_end = 2025.
-  - "Current season" / "this year" → season where start <= today <= end; if between seasons, use upcoming.
-  - "Last season" → season immediately before current.
-  - Single year → first match year_start; if not found, match year_end.
-- Use only data from RETRIEVED CONTEXT. Do not guess season_id values.
+--- Grade ---
+- If the user mentions a school level, add a teams.grade condition (op "eq") using EXACTLY
+  one of these values:
+  - "elementary" / "elementary school" → "Elementary School"
+  - "middle school" → "Middle School"
+  - "high school" → "High School"
+  - "college" / "university" / "uni" → "College"
+- A grade phrase also helps identify the program: it is part of the text used to resolve
+  program_id from RETRIEVED CONTEXT (e.g. "elementary" → VIQRC, "university" → VURC). Add
+  program_id only if a matching program is surfaced in RETRIEVED CONTEXT (per --- Program ---);
+  never guess program_id for a grade, especially ambiguous ones (middle/high school).
+- If no school level is mentioned, omit teams.grade.
 
 --- Program ---
 - Resolve program names/abbreviations to program_id using RETRIEVED CONTEXT. Matching is case-insensitive.
 - The program_id value is found in the [metadata] section of the retrieved context under the key "program_id".
 - If no match found, use the user's original input as-is.
 - Do not guess program_id values, and don't add program_id filter if no program is mentioned
+
+--- Season ---
+- If the user mentions only a year (e.g., "2025", "in 2026"), prefer season_id over a time range.
+- Resolve program_id FIRST (per the --- Program --- rules), then choose how to express season_id:
+  - If a program IS resolved AND a year is given → output a SINGLE season_id with op "eq":
+    pick the one season in RETRIEVED CONTEXT that matches that program_id and that year.
+  - If NO program is resolved AND a year is given → output season_id with op "in" and an
+    array of ALL season_id values in RETRIEVED CONTEXT that match that year (one per program).
+    Example: {"field": "season_id", "op": "in", "value": [196, 197, 198, 199, 201]}
+- Year matching (applies to both cases):
+  - Year range (e.g., "2024-2025") → match year_start = 2024 AND year_end = 2025.
+  - "Current season" / "this year" → season where start <= today <= end; if between seasons, use upcoming.
+  - "Last season" → season immediately before current.
+  - Single year → first match year_start; if not found, match year_end.
+- Use only data from RETRIEVED CONTEXT. Do not guess season_id values.
+- The "in" operator is only for season_id. Do not use "in" on any other field.
+
 
 --- Dates ---
 - Interpret relative dates using today's date:
@@ -141,6 +170,12 @@ Valid orderBy fields and when to use them:
   - "next week" → Monday–Sunday of following week
   - "this month" → first to last day of current month
   - Always output ISO 8601 with timezone offset, e.g., "2026-01-02T00:00:00-05:00"
+
+--- Extracted hints ---
+- An EXTRACTED block may be provided with pre-computed values from an earlier step:
+  - "season_year": the already-resolved season year. Trust it as-is — do not re-derive the
+    year from today's date. Use it to select season_id from RETRIEVED CONTEXT per --- Season ---.
+  - "entity": the classified entity. Use it unless the query text clearly contradicts it.
 
 --- General ---
 - Omit any field not explicitly present or confidently inferred.
@@ -235,6 +270,42 @@ Output:
     "field": "teams.best_skill_score",
     "direction": "desc"
   },
+  "selectTop": 1
+}
+
+Example 6:
+User: best teams in 2025
+
+(No program mentioned, so match every season for that year across programs.)
+
+Output:
+{
+  "entity": "team",
+  "filter": {
+    "and": [
+      {"field": "season_id", "op": "in", "value": [196, 197, 198, 199, 201]}
+    ]
+  },
+  "orderBy": {"field": "teams.best_skill_score", "direction": "desc"},
+  "selectTop": 1
+}
+
+Example 7:
+User: best elementary school teams in 2025
+
+(Grade phrase sets teams.grade and surfaces the VIQRC program → program_id 41; single program + year → season_id eq.)
+
+Output:
+{
+  "entity": "team",
+  "filter": {
+    "and": [
+      {"field": "teams.grade", "op": "eq", "value": "Elementary School"},
+      {"field": "program_id", "op": "eq", "value": 41},
+      {"field": "season_id", "op": "eq", "value": 196}
+    ]
+  },
+  "orderBy": {"field": "teams.best_skill_score", "direction": "desc"},
   "selectTop": 1
 }
 

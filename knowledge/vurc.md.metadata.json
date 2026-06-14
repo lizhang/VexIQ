@@ -3,6 +3,7 @@
         "program_id": "4",
         "program_name": "VURC",
         "version": "2026-05-17",
-        "status": "active"
+        "status": "active",
+        "type": "program"
       }
 }

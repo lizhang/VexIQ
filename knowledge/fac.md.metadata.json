@@ -3,6 +3,7 @@
         "program_id": "56",
         "program_name": "FAC",
         "version": "2026-05-17",
-        "status": "active"
+        "status": "active",
+        "type": "program"
       }
 }

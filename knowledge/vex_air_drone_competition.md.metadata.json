@@ -3,6 +3,7 @@
         "program_id": "58",
         "program_name": "VEX_AIR_Drone_Competition",
         "version": "2026-05-17",
-        "status": "active"
+        "status": "active",
+        "type": "program"
       }
 }

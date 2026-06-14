@@ -3,6 +3,7 @@
         "program_id": "37",
         "program_name": "WORKSHOP",
         "version": "2026-05-17",
-        "status": "active"
+        "status": "active",
+        "type": "program"
       }
 }
