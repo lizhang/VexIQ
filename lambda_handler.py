@@ -105,7 +105,8 @@ def lambda_handler(event, context):
         # step 1: classify intent + extract season year
         intent = extract_intent(user_input)
         print(intent)
-        if intent.command:
+        if intent.command or not intent.entity:
+            # command -> injection/instruction attempt; missing entity -> off-topic
             status_code = 400
             output = json.dumps({"error": {"message": "unsupported request"}})
         else:
