@@ -22,6 +22,11 @@ ALLOWED_ORDERBY_FIELDS = frozenset({
     "events.time", "matches.time",
 })
 
+# Allowed values for constrained fields — must stay in sync with prompt.md.
+ALLOWED_GRADE_VALUES = frozenset({
+    "Elementary School", "Middle School", "High School", "College",
+})
+
 
 class FilterCondition(BaseModel):
     field: str
@@ -37,6 +42,10 @@ class FilterCondition(BaseModel):
             raise ValueError('op "in" requires a list value')
         if self.op != "in" and is_list:
             raise ValueError(f'op "{self.op}" requires a scalar value, not a list')
+        if self.field == "teams.grade" and self.value not in ALLOWED_GRADE_VALUES:
+            raise ValueError(
+                f'teams.grade must be one of {sorted(ALLOWED_GRADE_VALUES)}, got "{self.value}"'
+            )
         return self
 
 

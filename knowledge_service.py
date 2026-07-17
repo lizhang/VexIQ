@@ -39,10 +39,10 @@ def _retrieve(query: str, filter_: dict, num_results: int) -> str:
                 }
             },
         )
-        print("query: ", query)
-        print("filter: ", filter_)
-        print("num_results: ", num_results)
-        print(response)
+        #print("query: ", query)
+        #print("filter: ", filter_)
+        #print("num_results: ", num_results)
+        #print(response)
         return _format(response.get("retrievalResults", []))
     except Exception:
         return ""
